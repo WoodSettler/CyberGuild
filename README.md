@@ -1,65 +1,56 @@
-# CyberGuild · 赛博佣兵公会
+# CyberGuild
 
-跨 harness 的 AI Agent 任命与项目协作 skill。成员身份由用户任命，不由模型或工具决定。用户指令优先于成员间安排。
+**English** | [简体中文](README.zh-CN.md)
 
-## 安装
+A lightweight AI agent guild for Claude Code, Codex, and DeepSeek Harness. Assign persistent identities across tools, collaborate through a project QuestBoard, and load context only when needed.
 
-Claude Code 与 Codex：
+## Install
 
 ```sh
 npx skills add WoodSettler/CyberGuild --skill guild-appoint -a claude-code codex -g
 ```
 
-本地开发可把仓库地址替换为本仓库路径。通用安装器见 https://github.com/vercel-labs/skills 。
+Choose **Symlink** to share one installed package. The skills installer places the shared copy in `~/.agents/skills/guild-appoint`; Claude Code links to it. Installation is not an appointment.
 
-DeepSeek Harness 使用相同的 skill 目录格式，安装位置为 `~/.dsh/skills/guild-appoint/`。将完整的 `skills/guild-appoint` 目录复制或链接到这里即可；不要只复制 SKILL.md。尚未确认通用安装器支持 DSH 的 agent 名称，因此不提供未经验证的 `-a dsh` 命令。
-
-Windows 本地仓库链接示例（目标不存在时执行；保留已有同名安装）：
+For DeepSeek Harness on Windows, connect its native skills directory to that same copy:
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "$HOME\.dsh\skills"
-New-Item -ItemType Junction -Path "$HOME\.dsh\skills\guild-appoint" -Target "<仓库路径>\skills\guild-appoint"
+& "$HOME\.agents\skills\guild-appoint\scripts\connect-dsh.ps1"
+python -X utf8 "$HOME\.agents\skills\guild-appoint\scripts\check-install.py"
 ```
 
-安装不等于任命。明确调用：
+The adapter is idempotent. An existing different installation is preserved outside the skills directory, under `skill-backups`; a failed link creation attempts restoration. Use `-Source` and `-SkillsDirectory` for custom paths. This adapter targets Windows. We do not claim that the upstream installer supports an `-a dsh` option.
 
-> 使用 guild-appoint，在当前项目中任命你为 Aster。
+## Appoint a member
 
-原生 skill 入口语法由 harness 决定；也可显式读取安装目录的 SKILL.md。Codex 包含显式调用策略，其他 harness 仍须遵守入口中的用户明确任命要求。尚未完成三种 harness 的端到端行为验证。
+> Use guild-appoint. I appoint you as Aster in this project.
 
-## 自包含发布结构
+The user chooses the identity, not the harness or model. Only the entrypoint, roster summary and project membership are loaded initially. Profiles, messages and protocol details are opened on demand. Responses can follow the user's language.
 
-```text
-skills/guild-appoint/
-  SKILL.md
-  agents/openai.yaml
-  registry/
-    成员索引.md
-    profiles/Claire.md
-    profiles/Aster.md
-    profiles/Seek.md
-  protocol/QuestBoard.md
-  templates/QuestBoard/
-```
-
-[共享入口](skills/guild-appoint/SKILL.md) 及其所有运行依赖均在一个 skill 目录中，复制安装后无需定位源仓库。自包含不等于默认全量读取：任命只加载入口、成员摘要和目标项目的成员表；档案、协议与消息按需展开。
-
-## 默认公开队伍
-
-| 成员 | 专长 |
+| Member | Default specialty |
 | --- | --- |
-| Claire · Chief Thought Officer | 高价值思考、方案与重要取舍 |
-| Aster · Chief Realization Officer | 长期实现计划、分阶段任务书与目标一致性 |
-| Seek · Chief Exploration Officer & Execution Officer | 准确执行任务书、搜索与整理情报 |
+| Claire — Chief Thought Officer | Problem framing, valuable ideas and consequential decisions |
+| Aster — Chief Realization Officer | Sustainable implementation plans, staged assignments and goal alignment |
+| Seek — Chief Exploration Officer & Execution Officer | Precise execution, intelligence gathering and synthesis |
 
-[成员索引](skills/guild-appoint/registry/成员索引.md) 与档案是随包公开的默认版本，不包含真实会话、私人历史或用户项目数据。它们不是运行中的任命。头衔不限制其他能力，也不构成上下级关系；性格与履历中尚未提供的内容不虚构。
+These public profiles describe defaults, not capability restrictions or a hierarchy. Users may explicitly supply a custom roster. User instructions override peer assignments within their stated scope; affected colleagues must be informed.
 
-用户可明确指定外部自定义名册，安装更新不会负责迁移该名册。未指定时使用包内默认队伍。默认职责由名册维护，项目成员表只记录任命与项目差异。
+## Self-contained package
 
-## QuestBoard
+All runtime resources live in [skills/guild-appoint](skills/guild-appoint): the entrypoint, public roster and profiles, QuestBoard protocol, templates, and optional installation helpers. Copying this directory does not require the source repository. Project appointments and messages stay in the target workspace, outside the installed package.
 
-每个合作项目有自己的 QuestBoard：成员表、消息列表和逐条详情。两个单句入口 AGENTS.md 与 CLAUDE.md 只允许本项目已获用户任命的成员接发任务。模板未授权任何成员。
+QuestBoard uses a message index and one Markdown file per message. Its membership rules are behavioral conventions, not filesystem access controls. There is no background daemon, automatic wake-up or task scheduler. OrKi can remain a separate execution tool.
 
-这是行为约定，不是操作系统权限；用户指令仅覆盖其涉及范围，接收成员负责通知受影响同事。项目运行数据保留在目标工作区，不写回已安装 skill。
+## Verify, update and remove
 
-同一项目同一身份默认一个活跃会话，用户可明确接替或分身。文件不会自动唤醒会话；本包不包含后台服务或调度器，OrKi 可作为独立执行工具使用。
+The checker validates package completeness, internal links and identical content across all three installations, and reports whether they resolve to one shared target. It does **not** prove native harness discovery or model behavior.
+
+Run `npx skills update`, then rerun the checker. Before removing the shared package, unlink DSH to avoid a dangling link. On Windows, after confirming the DSH path is a junction, `[IO.Directory]::Delete("$HOME\.dsh\skills\guild-appoint")` removes the junction only. Never recursively delete its target to uninstall a link.
+
+Live-session acceptance remains separate: explicitly invoke the skill in a temporary project; inspect actual tool reads; verify minimal context, no unsolicited colleague appointments, and scoped user overrides with notification. These behaviors are not yet certified across all three harnesses.
+
+## Languages and scope
+
+English and Chinese project guides link to each other. Runtime instructions remain a single Chinese source to avoid conflicting translated protocols. This release provides bilingual documentation, not a localized UI or a second runtime rule set.
+
+Source: [skills installer](https://github.com/vercel-labs/skills). DSH uses the local `~/.dsh/skills` convention supplied by its user; native discovery still requires live verification.
